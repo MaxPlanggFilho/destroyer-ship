@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE HERO - POWER UP</title>
+    <title>FIRE HERO - X2 20s</title>
     <style>
         body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; user-select: none; }
         canvas { display: block; margin: 0 auto; background-color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
@@ -33,7 +33,7 @@
 
     <div id="ui">
         <div id="coin-display">💰 Moedas: <span id="totalCoinsUI">0</span></div>
-        <div id="powerup-timer">⚡ MODO X2: <span id="timerSec">10</span>s</div>
+        <div id="powerup-timer">⚡ MODO X2: <span id="timerSec">20</span>s</div>
     </div>
     
     <div id="lobby" class="overlay">
@@ -131,7 +131,6 @@
 
         function selecionarNave(type) { currentShip = type; localStorage.setItem('equippedShip', type); updateUI(); }
 
-        // --- Motor do Jogo ---
         let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
         let balas = [], inimigos = [], powerups = [];
         let doubleShotActive = false, powerupTimer = 0;
@@ -146,7 +145,7 @@
                 ctx.fillStyle = doubleShotActive ? shipColors['powerup'] : shipColors[currentShip];
                 ctx.fill(); ctx.closePath();
                 ctx.fillStyle = '#fff';
-                if (doubleShotActive) { // Canhão duplo visual
+                if (doubleShotActive) {
                     ctx.fillRect(this.x - 12, this.y - 30, 6, 20);
                     ctx.fillRect(this.x + 6, this.y - 30, 6, 20);
                 } else {
@@ -199,24 +198,21 @@
                 this.y += this.speed;
                 if (Math.hypot(player.x - this.x, player.y - this.y) < 30) {
                     ativarPowerUp();
-                    return true; // marcar para deletar
+                    return true;
                 }
                 return this.y > canvas.height;
             }
             draw() {
                 ctx.fillStyle = '#ffff00';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.font = 'bold 12px Arial';
+                ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
                 ctx.fillText('X2', this.x, this.y + 4);
             }
         }
 
         function ativarPowerUp() {
             doubleShotActive = true;
-            powerupTimer = 600; // 10 segundos (60fps * 10)
+            powerupTimer = 1200; // 20 segundos
             document.getElementById('powerup-timer').style.display = 'block';
         }
 
@@ -243,18 +239,13 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Spawn de itens e inimigos
             if (frame % 10 === 0) {
-                if (doubleShotActive) {
-                    balas.push(new Bala(-10), new Bala(10));
-                } else {
-                    balas.push(new Bala());
-                }
+                if (doubleShotActive) { balas.push(new Bala(-10), new Bala(10)); } 
+                else { balas.push(new Bala()); }
             }
             if (frame % 40 === 0) inimigos.push(new Inimigo());
-            if (frame > 0 && frame % 1200 === 0) powerups.push(new PowerUp()); // Cada 20 segundos (20 * 60 = 1200 frames)
+            if (frame > 0 && frame % 1200 === 0) powerups.push(new PowerUp());
 
-            // Timer do PowerUp
             if (doubleShotActive) {
                 powerupTimer--;
                 document.getElementById('timerSec').innerText = Math.ceil(powerupTimer / 60);
@@ -264,14 +255,9 @@
                 }
             }
 
-            // Dano
-            let danoBase = 1;
-            if (currentShip === 'purple') danoBase = 2;
-            if (currentShip === 'orange') danoBase = 3;
-            if (currentShip === 'red') danoBase = 4;
+            let danoBase = (currentShip === 'purple' ? 2 : currentShip === 'orange' ? 3 : currentShip === 'red' ? 4 : 1);
             let danoFinal = doubleShotActive ? danoBase * 2 : danoBase;
 
-            // Updates
             powerups = powerups.filter(p => !p.update());
             balas.forEach(b => {
                 b.update();
@@ -283,8 +269,6 @@
                 });
             });
             inimigos.forEach(ini => ini.update());
-            
-            // Desenho
             balas = balas.filter(b => !b.markedForDeletion);
             inimigos = inimigos.filter(i => !i.markedForDeletion);
             balas.forEach(b => b.draw());
