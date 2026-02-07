@@ -132,7 +132,7 @@
         function selecionarNave(type) { currentShip = type; localStorage.setItem('equippedShip', type); updateUI(); }
 
         let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
-        let balas = [], inimigos = [], powerups = [];
+        let balas = [], inimigos = [], powerups = [], particulas = [];
         let doubleShotActive = false, powerupTimer = 0;
 
         const shipColors = { 'default': '#00ccff', 'purple': '#a020f0', 'orange': '#ff8c00', 'red': '#ff0000', 'powerup': '#ffff00' };
@@ -210,6 +210,33 @@
             }
         }
 
+        class Particula {
+            constructor(x, y, cor) {
+                this.x = x;
+                this.y = y;
+                this.cor = cor;
+                this.size = Math.random() * 4 + 2;
+                this.speedX = (Math.random() - 0.5) * 6;
+                this.speedY = (Math.random() - 0.5) * 6;
+                this.vida = 1.0;
+                this.gravidade = 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedY += this.gravidade;
+                this.vida -= 0.02;
+                return this.vida <= 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.vida;
+                ctx.fillStyle = this.cor;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
         function ativarPowerUp() {
             doubleShotActive = true;
             powerupTimer = 1200; // 20 segundos
@@ -218,7 +245,7 @@
 
         function começarJogo() {
             sessionCoins = 0; frame = 0; gameOver = false; jogoRodando = true;
-            balas = []; inimigos = []; powerups = []; doubleShotActive = false;
+            balas = []; inimigos = []; powerups = []; particulas = []; doubleShotActive = false;
             document.getElementById('ui').style.display = 'block';
             fecharTudo(); animate();
         }
@@ -264,16 +291,36 @@
                 inimigos.forEach(ini => {
                     if (!b.markedForDeletion && !ini.markedForDeletion && b.x > ini.x && b.x < ini.x + ini.size && b.y > ini.y && b.y < ini.y + ini.size) {
                         ini.vida -= danoFinal; b.markedForDeletion = true;
-                        if (ini.vida <= 0) { sessionCoins += ini.maxVida; ini.markedForDeletion = true; }
+                        if (ini.vida <= 0) { 
+                            sessionCoins += ini.maxVida; 
+                            ini.markedForDeletion = true; 
+                            
+                            // GERAR EXPLOSÃO DE PARTÍCULAS
+                            let corInimigo = `hsl(${Math.max(0, 200 - (ini.maxVida * 1.5))}, 80%, 50%)`;
+                            for (let i = 0; i < 12; i++) {
+                                particulas.push(new Particula(ini.x + ini.size / 2, ini.y + ini.size / 2, corInimigo));
+                            }
+                        }
                     }
                 });
             });
+
             inimigos.forEach(ini => ini.update());
             balas = balas.filter(b => !b.markedForDeletion);
             inimigos = inimigos.filter(i => !i.markedForDeletion);
+            
+            // Desenhar elementos
             balas.forEach(b => b.draw());
             inimigos.forEach(i => i.draw());
             powerups.forEach(p => p.draw());
+            
+            // Atualizar e desenhar partículas
+            particulas = particulas.filter(p => {
+                const sumiu = p.update();
+                if (!sumiu) p.draw();
+                return !sumiu;
+            });
+
             player.draw();
 
             frame++;
