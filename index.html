@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE HERO - X2 20s</title>
+    <title>FIRE HERO - MISSÕES DIÁRIAS</title>
     <style>
         body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; user-select: none; }
         canvas { display: block; margin: 0 auto; background-color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
@@ -15,18 +15,26 @@
         .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; z-index: 20; min-width: 320px; display: none; border: 2px solid #444; max-height: 80vh; overflow-y: auto; }
         #lobby { display: block; border-color: #00ccff; }
         #game-over { border-color: #ff3333; }
-        #shop, #hangar { border-color: #ffd700; }
+        #shop, #hangar, #missions { border-color: #ffd700; }
 
         button { margin-top: 10px; padding: 12px 30px; font-size: 18px; background: #00ccff; color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; transition: 0.2s; width: 100%; }
         button:active { transform: scale(0.95); }
+        button:disabled { background: #333; cursor: default; opacity: 0.6; }
+        
         .btn-shop { background: #ffd700; color: #000; }
         .btn-hangar { background: #a020f0; color: #fff; }
+        .btn-missions { background: #28a745; color: #fff; }
         .btn-select { background: #444; }
         .btn-select.active { background: #28a745; border: 2px solid white; }
         
         .item-card { border: 1px solid #555; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); }
         .ship-preview { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; }
         .coin-icon { color: #ffd700; font-weight: bold; }
+        
+        .mission-item { text-align: left; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #00ccff; }
+        .mission-item.completed { border-left-color: #28a745; opacity: 0.8; }
+        .progress-bar { width: 100%; height: 8px; background: #444; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #00ccff; width: 0%; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -40,29 +48,38 @@
         <h1 style="color: #00ccff; margin-top:0;">FIRE HERO</h1>
         <p>Moedas: <span class="coin-icon" id="lobbyCoins">0</span></p>
         <button onclick="começarJogo()">JOGAR</button>
+        <button class="btn-missions" onclick="abrirMissoes()">MISSÕES <span id="missionAlert" style="color:red; display:none;">!</span></button>
         <button class="btn-hangar" onclick="abrirHangar()">NAVES</button>
         <button class="btn-shop" onclick="abrirLoja()">LOJA</button>
     </div>
 
+    <div id="missions" class="overlay">
+        <h1 style="color: #28a745; margin-top:0;">MISSÕES DIÁRIAS</h1>
+        <div id="missionList"></div>
+        <button onclick="fecharTudo(); document.getElementById('lobby').style.display = 'block';">VOLTAR</button>
+    </div>
+
     <div id="hangar" class="overlay">
         <h1 style="color: #a020f0; margin-top:0;">HANGAR</h1>
-        <div class="item-card">
-            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #00ccff;"></div><span>Padrão (Dano 1)</span></div>
-            <button style="width: auto;" class="btn-select" id="btn-ship-default" onclick="selecionarNave('default')">USAR</button>
+        <div id="hangarList">
+            <div class="item-card">
+                <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #00ccff;"></div><span>Padrão (Dano 1)</span></div>
+                <button style="width: auto;" class="btn-select" id="btn-ship-default" onclick="selecionarNave('default')">USAR</button>
+            </div>
+            <div class="item-card" id="card-purple-ship" style="display: none;">
+                <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #a020f0;"></div><span>Roxa (Dano 2)</span></div>
+                <button style="width: auto;" class="btn-select" id="btn-ship-purple" onclick="selecionarNave('purple')">USAR</button>
+            </div>
+            <div class="item-card" id="card-orange-ship" style="display: none;">
+                <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff8c00;"></div><span>Laranja (Dano 3)</span></div>
+                <button style="width: auto;" class="btn-select" id="btn-ship-orange" onclick="selecionarNave('orange')">USAR</button>
+            </div>
+            <div class="item-card" id="card-red-ship" style="display: none;">
+                <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff0000;"></div><span>Vermelha (Dano 4)</span></div>
+                <button style="width: auto;" class="btn-select" id="btn-ship-red" onclick="selecionarNave('red')">USAR</button>
+            </div>
         </div>
-        <div class="item-card" id="card-purple-ship" style="display: none;">
-            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #a020f0;"></div><span>Roxa (Dano 2)</span></div>
-            <button style="width: auto;" class="btn-select" id="btn-ship-purple" onclick="selecionarNave('purple')">USAR</button>
-        </div>
-        <div class="item-card" id="card-orange-ship" style="display: none;">
-            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff8c00;"></div><span>Laranja (Dano 3)</span></div>
-            <button style="width: auto;" class="btn-select" id="btn-ship-orange" onclick="selecionarNave('orange')">USAR</button>
-        </div>
-        <div class="item-card" id="card-red-ship" style="display: none;">
-            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff0000;"></div><span>Vermelha (Dano 4)</span></div>
-            <button style="width: auto;" class="btn-select" id="btn-ship-red" onclick="selecionarNave('red')">USAR</button>
-        </div>
-        <button onclick="fecharHangar()">VOLTAR</button>
+        <button onclick="fecharTudo(); document.getElementById('lobby').style.display = 'block';">VOLTAR</button>
     </div>
 
     <div id="shop" class="overlay">
@@ -71,8 +88,7 @@
         <div class="item-card" id="buy-card-purple"><div><h3 style="color: #a020f0; margin: 0;">Nave Roxa</h3><small>Dano 2x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('purple', 10000)">10.000</button></div>
         <div class="item-card" id="buy-card-orange"><div><h3 style="color: #ff8c00; margin: 0;">Nave Laranja</h3><small>Dano 3x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('orange', 20000)">20.000</button></div>
         <div class="item-card" id="buy-card-red"><div><h3 style="color: #ff0000; margin: 0;">Nave Vermelha</h3><small>Dano 4x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('red', 30000)">30.000</button></div>
-        <p id="allBoughtMsg" style="display:none;">Você já possui todas as naves!</p>
-        <button onclick="fecharLoja()">VOLTAR</button>
+        <button onclick="fecharTudo(); document.getElementById('lobby').style.display = 'block';">VOLTAR</button>
     </div>
 
     <div id="game-over" class="overlay">
@@ -91,31 +107,108 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // --- SISTEMA DE DADOS ---
         let totalCoins = parseInt(localStorage.getItem('fireHeroCoins')) || 0;
         let ownsPurpleShip = localStorage.getItem('ownsPurpleShip') === 'true';
         let ownsOrangeShip = localStorage.getItem('ownsOrangeShip') === 'true';
         let ownsRedShip = localStorage.getItem('ownsRedShip') === 'true';
         let currentShip = localStorage.getItem('equippedShip') || 'default';
 
+        // --- SISTEMA DE MISSÕES ---
+        let missions = JSON.parse(localStorage.getItem('fireHeroMissions')) || {
+            lastDate: null,
+            list: [
+                { id: 0, text: "Destrua 50 inimigos", goal: 50, current: 0, reward: 1000, completed: false, claimed: false },
+                { id: 1, text: "Pegue 3 Power-ups", goal: 3, current: 0, reward: 1000, completed: false, claimed: false },
+                { id: 2, text: "Sobreviva 5 min (total)", goal: 300, current: 0, reward: 1000, completed: false, claimed: false } // em segundos
+            ]
+        };
+
+        function checkDailyReset() {
+            const today = new Date().toLocaleDateString();
+            if (missions.lastDate !== today) {
+                missions.lastDate = today;
+                missions.list.forEach(m => {
+                    m.current = 0;
+                    m.completed = false;
+                    m.claimed = false;
+                });
+                saveMissions();
+            }
+        }
+        function saveMissions() { localStorage.setItem('fireHeroMissions', JSON.stringify(missions)); }
+
+        function updateMissionProgress(id, value) {
+            let m = missions.list[id];
+            if (!m.completed) {
+                m.current += value;
+                if (m.current >= m.goal) {
+                    m.current = m.goal;
+                    m.completed = true;
+                    document.getElementById('missionAlert').style.display = 'inline';
+                }
+                saveMissions();
+            }
+        }
+
+        // --- UI E MENUS ---
         function updateUI() {
             document.getElementById('totalCoinsUI').innerText = totalCoins;
             document.getElementById('lobbyCoins').innerText = totalCoins;
             document.getElementById('shopCoins').innerText = totalCoins;
+            
             if (ownsPurpleShip) { document.getElementById('buy-card-purple').style.display = 'none'; document.getElementById('card-purple-ship').style.display = 'flex'; }
             if (ownsOrangeShip) { document.getElementById('buy-card-orange').style.display = 'none'; document.getElementById('card-orange-ship').style.display = 'flex'; }
             if (ownsRedShip) { document.getElementById('buy-card-red').style.display = 'none'; document.getElementById('card-red-ship').style.display = 'flex'; }
-            const ships = ['default', 'purple', 'orange', 'red'];
-            ships.forEach(s => {
+            
+            ['default', 'purple', 'orange', 'red'].forEach(s => {
                 const btn = document.getElementById(`btn-ship-${s}`);
-                if (btn) { btn.className = currentShip === s ? 'btn-select active' : 'btn-select'; btn.innerText = currentShip === s ? 'EM USO' : 'USAR'; }
+                if (btn) {
+                    btn.className = currentShip === s ? 'btn-select active' : 'btn-select';
+                    btn.innerText = currentShip === s ? 'EM USO' : 'USAR';
+                }
             });
+        }
+
+        function abrirMissoes() {
+            fecharTudo();
+            document.getElementById('missions').style.display = 'block';
+            document.getElementById('missionAlert').style.display = 'none';
+            const listDiv = document.getElementById('missionList');
+            listDiv.innerHTML = '';
+            
+            missions.list.forEach(m => {
+                const pct = (m.current / m.goal) * 100;
+                const div = document.createElement('div');
+                div.className = `mission-item ${m.completed ? 'completed' : ''}`;
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>${m.completed ? '✅' : '🚀'} ${m.text}</span>
+                        <span style="color:#ffd700">💰 ${m.reward}</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    <small>${m.current} / ${m.goal}</small>
+                    ${m.completed && !m.claimed ? `<button onclick="resgatarMissao(${m.id})" style="padding:5px; font-size:12px; margin-top:5px;">RESGATAR</button>` : ''}
+                    ${m.claimed ? `<div style="color:#28a745; font-size:12px; margin-top:5px; font-weight:bold;">RESGATADO</div>` : ''}
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+
+        function resgatarMissao(id) {
+            if (missions.list[id].completed && !missions.list[id].claimed) {
+                missions.list[id].claimed = true;
+                totalCoins += missions.list[id].reward;
+                localStorage.setItem('fireHeroCoins', totalCoins);
+                saveMissions();
+                updateUI();
+                abrirMissoes();
+            }
         }
 
         function abrirLoja() { fecharTudo(); document.getElementById('shop').style.display = 'block'; updateUI(); }
         function abrirHangar() { fecharTudo(); document.getElementById('hangar').style.display = 'block'; updateUI(); }
         function fecharTudo() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
-        function fecharLoja() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
-        function fecharHangar() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
 
         function comprarNave(tipo, preco) {
             if (totalCoins >= preco) {
@@ -131,6 +224,7 @@
 
         function selecionarNave(type) { currentShip = type; localStorage.setItem('equippedShip', type); updateUI(); }
 
+        // --- LÓGICA DO JOGO ---
         let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
         let balas = [], inimigos = [], powerups = [], particulas = [];
         let doubleShotActive = false, powerupTimer = 0;
@@ -198,6 +292,7 @@
                 this.y += this.speed;
                 if (Math.hypot(player.x - this.x, player.y - this.y) < 30) {
                     ativarPowerUp();
+                    updateMissionProgress(1, 1); // MISSÃO 1: Powerups
                     return true;
                 }
                 return this.y > canvas.height;
@@ -212,34 +307,27 @@
 
         class Particula {
             constructor(x, y, cor) {
-                this.x = x;
-                this.y = y;
-                this.cor = cor;
+                this.x = x; this.y = y; this.cor = cor;
                 this.size = Math.random() * 4 + 2;
                 this.speedX = (Math.random() - 0.5) * 6;
                 this.speedY = (Math.random() - 0.5) * 6;
-                this.vida = 1.0;
-                this.gravidade = 0.1;
+                this.vida = 1.0; this.gravidade = 0.1;
             }
             update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.speedY += this.gravidade;
-                this.vida -= 0.02;
+                this.x += this.speedX; this.y += this.speedY;
+                this.speedY += this.gravidade; this.vida -= 0.02;
                 return this.vida <= 0;
             }
             draw() {
-                ctx.save();
-                ctx.globalAlpha = this.vida;
-                ctx.fillStyle = this.cor;
-                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.save(); ctx.globalAlpha = this.vida;
+                ctx.fillStyle = this.cor; ctx.fillRect(this.x, this.y, this.size, this.size);
                 ctx.restore();
             }
         }
 
         function ativarPowerUp() {
             doubleShotActive = true;
-            powerupTimer = 1200; // 20 segundos
+            powerupTimer = 1200;
             document.getElementById('powerup-timer').style.display = 'block';
         }
 
@@ -266,12 +354,16 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // Spawn logic
             if (frame % 10 === 0) {
                 if (doubleShotActive) { balas.push(new Bala(-10), new Bala(10)); } 
                 else { balas.push(new Bala()); }
             }
             if (frame % 40 === 0) inimigos.push(new Inimigo());
             if (frame > 0 && frame % 1200 === 0) powerups.push(new PowerUp());
+
+            // Missão de tempo (60 frames = 1 seg)
+            if (frame % 60 === 0) updateMissionProgress(2, 1);
 
             if (doubleShotActive) {
                 powerupTimer--;
@@ -294,12 +386,9 @@
                         if (ini.vida <= 0) { 
                             sessionCoins += ini.maxVida; 
                             ini.markedForDeletion = true; 
-                            
-                            // GERAR EXPLOSÃO DE PARTÍCULAS
+                            updateMissionProgress(0, 1); // MISSÃO 0: Inimigos
                             let corInimigo = `hsl(${Math.max(0, 200 - (ini.maxVida * 1.5))}, 80%, 50%)`;
-                            for (let i = 0; i < 12; i++) {
-                                particulas.push(new Particula(ini.x + ini.size / 2, ini.y + ini.size / 2, corInimigo));
-                            }
+                            for (let i = 0; i < 12; i++) particulas.push(new Particula(ini.x + ini.size / 2, ini.y + ini.size / 2, corInimigo));
                         }
                     }
                 });
@@ -308,19 +397,12 @@
             inimigos.forEach(ini => ini.update());
             balas = balas.filter(b => !b.markedForDeletion);
             inimigos = inimigos.filter(i => !i.markedForDeletion);
-            
-            // Desenhar elementos
+            particulas = particulas.filter(p => !p.update());
+
             balas.forEach(b => b.draw());
             inimigos.forEach(i => i.draw());
             powerups.forEach(p => p.draw());
-            
-            // Atualizar e desenhar partículas
-            particulas = particulas.filter(p => {
-                const sumiu = p.update();
-                if (!sumiu) p.draw();
-                return !sumiu;
-            });
-
+            particulas.forEach(p => p.draw());
             player.draw();
 
             frame++;
@@ -336,6 +418,8 @@
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', handleMove, {passive: false});
 
+        // Inicialização
+        checkDailyReset();
         updateUI();
     </script>
 </body>
