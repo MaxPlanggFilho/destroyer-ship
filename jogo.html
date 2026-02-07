@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Hero - Fix Edition</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; user-select: none; }
+        canvas { display: block; margin: 0 auto; background-color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
+        
+        #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 20px; font-weight: bold; z-index: 10; pointer-events: none; text-shadow: 2px 2px 0 #000; display: none; }
+        #coin-display { color: #ffd700; margin-bottom: 5px; }
+
+        .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; z-index: 20; min-width: 300px; display: none; border: 2px solid #444; }
+        #lobby { display: block; border-color: #00ccff; }
+        #game-over { border-color: #ff3333; }
+        #shop, #hangar { border-color: #ffd700; }
+
+        button { margin-top: 10px; padding: 12px 30px; font-size: 18px; background: #00ccff; color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; transition: 0.2s; width: 100%; }
+        button:active { transform: scale(0.95); }
+        .btn-shop { background: #ffd700; color: #000; }
+        .btn-hangar { background: #a020f0; color: #fff; }
+        .btn-select { background: #444; }
+        .btn-select.active { background: #28a745; border: 2px solid white; }
+        
+        .item-card { border: 1px solid #555; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); }
+        .ship-preview { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; }
+        .coin-icon { color: #ffd700; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div id="coin-display">💰 Moedas: <span id="totalCoinsUI">0</span></div>
+    </div>
+    
+    <div id="lobby" class="overlay">
+        <h1 style="color: #00ccff; margin-top:0;">FIRE HERO</h1>
+        <p>Moedas: <span class="coin-icon" id="lobbyCoins">0</span></p>
+        <button onclick="começarJogo()">JOGAR</button>
+        <button class="btn-hangar" onclick="abrirHangar()">NAVES</button>
+        <button class="btn-shop" onclick="abrirLoja()">LOJA</button>
+    </div>
+
+    <div id="hangar" class="overlay">
+        <h1 style="color: #a020f0; margin-top:0;">HANGAR</h1>
+        <div class="item-card">
+            <div style="display: flex; align-items: center;">
+                <div class="ship-preview" style="background: #00ccff;"></div>
+                <span>Padrão (Dano 1)</span>
+            </div>
+            <button style="width: auto;" class="btn-select" id="btn-ship-default" onclick="selecionarNave('default')">USAR</button>
+        </div>
+        <div class="item-card" id="card-purple-ship" style="display: none;">
+            <div style="display: flex; align-items: center;">
+                <div class="ship-preview" style="background: #a020f0;"></div>
+                <span>Roxa (Dano 2)</span>
+            </div>
+            <button style="width: auto;" class="btn-select" id="btn-ship-purple" onclick="selecionarNave('purple')">USAR</button>
+        </div>
+        <button onclick="fecharHangar()">VOLTAR</button>
+    </div>
+
+    <div id="shop" class="overlay">
+        <h1 style="color: #ffd700; margin-top:0;">LOJA</h1>
+        <p>Saldo: <span class="coin-icon" id="shopCoins">0</span></p>
+        <div class="item-card" id="buy-card-purple">
+            <div style="text-align: left;">
+                <h3 style="color: #a020f0; margin: 0;">Nave Roxa</h3>
+                <small>Dano 2x permanente</small>
+            </div>
+            <button style="width: auto;" class="btn-shop" onclick="comprarNave()">10.000</button>
+        </div>
+        <p id="allBoughtMsg" style="display:none;">Você já possui todos os itens!</p>
+        <button onclick="fecharLoja()">VOLTAR</button>
+    </div>
+
+    <div id="game-over" class="overlay">
+        <h1 style="color: #ff3333; margin-top:0;">FIM DE JOGO</h1>
+        <p>Você coletou:</p>
+        <h2 class="coin-icon">💰 <span id="earnedCoins">0</span></h2>
+        <button onclick="irParaLobby()">VOLTAR AO MENU</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        function resize() { canvas.width = Math.min(window.innerWidth, 500); canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Persistência e Dados ---
+        let totalCoins = parseInt(localStorage.getItem('fireHeroCoins')) || 0;
+        let ownsPurpleShip = localStorage.getItem('ownsPurpleShip') === 'true';
+        let currentShip = localStorage.getItem('equippedShip') || 'default';
+
+        function updateUI() {
+            document.getElementById('totalCoinsUI').innerText = totalCoins;
+            document.getElementById('lobbyCoins').innerText = totalCoins;
+            document.getElementById('shopCoins').innerText = totalCoins;
+            
+            if (ownsPurpleShip) {
+                document.getElementById('buy-card-purple').style.display = 'none';
+                document.getElementById('allBoughtMsg').style.display = 'block';
+                document.getElementById('card-purple-ship').style.display = 'flex';
+            }
+
+            document.getElementById('btn-ship-default').className = currentShip === 'default' ? 'btn-select active' : 'btn-select';
+            document.getElementById('btn-ship-default').innerText = currentShip === 'default' ? 'EM USO' : 'USAR';
+            
+            if (ownsPurpleShip) {
+                document.getElementById('btn-ship-purple').className = currentShip === 'purple' ? 'btn-select active' : 'btn-select';
+                document.getElementById('btn-ship-purple').innerText = currentShip === 'purple' ? 'EM USO' : 'USAR';
+            }
+        }
+
+        // --- Navegação ---
+        function abrirLoja() { fecharTudo(); document.getElementById('shop').style.display = 'block'; updateUI(); }
+        function abrirHangar() { fecharTudo(); document.getElementById('hangar').style.display = 'block'; updateUI(); }
+        function fecharTudo() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
+        function fecharLoja() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
+        function fecharHangar() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
+
+        function comprarNave() {
+            if (totalCoins >= 10000) {
+                totalCoins -= 10000;
+                ownsPurpleShip = true;
+                localStorage.setItem('fireHeroCoins', totalCoins);
+                localStorage.setItem('ownsPurpleShip', 'true');
+                updateUI();
+            } else { alert("Você precisa de 10.000 moedas!"); }
+        }
+
+        function selecionarNave(type) {
+            currentShip = type;
+            localStorage.setItem('equippedShip', type);
+            updateUI();
+        }
+
+        // --- Motor do Jogo ---
+        let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
+        let balas = [], inimigos = [];
+
+        const player = {
+            x: canvas.width / 2, y: canvas.height - 100, radius: 15,
+            draw: function() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = currentShip === 'purple' ? '#a020f0' : '#00ccff';
+                ctx.fill();
+                ctx.closePath();
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x - 3, this.y - 35, 6, 25);
+            }
+        };
+
+        class Bala {
+            constructor() { 
+                this.x = player.x; 
+                this.y = player.y - 30; 
+                this.radius = 5; 
+                this.speed = 14; 
+                this.markedForDeletion = false; 
+            }
+            update() { this.y -= this.speed; if (this.y < -10) this.markedForDeletion = true; }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = currentShip === 'purple' ? '#d8b4fe' : '#00f2ff';
+                ctx.fill(); ctx.closePath();
+            }
+        }
+
+        class Inimigo {
+            constructor() {
+                this.cols = 5;
+                this.size = canvas.width / this.cols;
+                this.x = Math.floor(Math.random() * this.cols) * this.size;
+                this.y = -this.size;
+                this.speed = 1.5 + (sessionCoins / 10000);
+                this.vida = Math.floor(Math.random() * 20) + 15 + Math.floor(sessionCoins / 50);
+                this.maxVida = this.vida;
+                this.markedForDeletion = false;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) this.markedForDeletion = true;
+                // Colisão com jogador
+                if (Math.hypot(player.x - (this.x + this.size/2), player.y - (this.y + this.size/2)) < this.size/1.4) {
+                    gameOver = true;
+                }
+            }
+            draw() {
+                let hue = Math.max(0, 200 - (this.vida * 1.5));
+                ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                ctx.fillRect(this.x + 3, this.y + 3, this.size - 6, this.size - 6);
+                ctx.fillStyle = 'white'; 
+                ctx.font = `bold ${this.size/2.5}px Arial`;
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.vida, this.x + this.size/2, this.y + this.size/2);
+            }
+        }
+
+        function começarJogo() {
+            sessionCoins = 0; frame = 0; gameOver = false; jogoRodando = true;
+            balas = []; inimigos = [];
+            document.getElementById('ui').style.display = 'block';
+            fecharTudo();
+            animate();
+        }
+
+        function irParaLobby() {
+            fecharTudo();
+            document.getElementById('lobby').style.display = 'block';
+            document.getElementById('ui').style.display = 'none';
+            jogoRodando = false;
+            updateUI();
+        }
+
+        function animate() {
+            if (!jogoRodando) return;
+            if (gameOver) {
+                totalCoins += sessionCoins;
+                localStorage.setItem('fireHeroCoins', totalCoins);
+                document.getElementById('game-over').style.display = 'block';
+                document.getElementById('earnedCoins').innerText = sessionCoins;
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (frame % 10 === 0) balas.push(new Bala());
+            if (frame % 40 === 0) inimigos.push(new Inimigo());
+
+            // Update e Colisão
+            balas.forEach(b => {
+                b.update();
+                inimigos.forEach(ini => {
+                    if (!b.markedForDeletion && !ini.markedForDeletion && 
+                        b.x > ini.x && b.x < ini.x + ini.size && 
+                        b.y > ini.y && b.y < ini.y + ini.size) {
+                        
+                        ini.vida -= (currentShip === 'purple' ? 2 : 1);
+                        b.markedForDeletion = true;
+                        if (ini.vida <= 0) { 
+                            sessionCoins += ini.maxVida; 
+                            ini.markedForDeletion = true; 
+                        }
+                    }
+                });
+            });
+
+            inimigos.forEach(ini => ini.update());
+
+            // Filtro e Desenho
+            balas = balas.filter(b => !b.markedForDeletion);
+            inimigos = inimigos.filter(i => !i.markedForDeletion);
+
+            balas.forEach(b => b.draw());
+            inimigos.forEach(i => i.draw());
+            player.draw();
+
+            frame++;
+            requestAnimationFrame(animate);
+        }
+
+        // --- Controles ---
+        function handleMove(e) {
+            if (!jogoRodando) return;
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, clientX - rect.left));
+        }
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('touchmove', handleMove, {passive: false});
+
+        updateUI();
+    </script>
+</body>
+</html>
