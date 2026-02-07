@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE HERO - DESTROYER</title>
+    <title>FIRE HERO - POWER UP</title>
     <style>
         body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; user-select: none; }
         canvas { display: block; margin: 0 auto; background-color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
         
         #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 20px; font-weight: bold; z-index: 10; pointer-events: none; text-shadow: 2px 2px 0 #000; display: none; }
         #coin-display { color: #ffd700; margin-bottom: 5px; }
+        #powerup-timer { color: #ffff00; font-size: 16px; display: none; }
 
         .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; z-index: 20; min-width: 320px; display: none; border: 2px solid #444; max-height: 80vh; overflow-y: auto; }
         #lobby { display: block; border-color: #00ccff; }
@@ -32,6 +33,7 @@
 
     <div id="ui">
         <div id="coin-display">💰 Moedas: <span id="totalCoinsUI">0</span></div>
+        <div id="powerup-timer">⚡ MODO X2: <span id="timerSec">10</span>s</div>
     </div>
     
     <div id="lobby" class="overlay">
@@ -44,70 +46,31 @@
 
     <div id="hangar" class="overlay">
         <h1 style="color: #a020f0; margin-top:0;">HANGAR</h1>
-        
         <div class="item-card">
-            <div style="display: flex; align-items: center;">
-                <div class="ship-preview" style="background: #00ccff;"></div>
-                <span>Padrão (Dano 1)</span>
-            </div>
+            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #00ccff;"></div><span>Padrão (Dano 1)</span></div>
             <button style="width: auto;" class="btn-select" id="btn-ship-default" onclick="selecionarNave('default')">USAR</button>
         </div>
-
         <div class="item-card" id="card-purple-ship" style="display: none;">
-            <div style="display: flex; align-items: center;">
-                <div class="ship-preview" style="background: #a020f0;"></div>
-                <span>Roxa (Dano 2)</span>
-            </div>
+            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #a020f0;"></div><span>Roxa (Dano 2)</span></div>
             <button style="width: auto;" class="btn-select" id="btn-ship-purple" onclick="selecionarNave('purple')">USAR</button>
         </div>
-
         <div class="item-card" id="card-orange-ship" style="display: none;">
-            <div style="display: flex; align-items: center;">
-                <div class="ship-preview" style="background: #ff8c00;"></div>
-                <span>Laranja (Dano 3)</span>
-            </div>
+            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff8c00;"></div><span>Laranja (Dano 3)</span></div>
             <button style="width: auto;" class="btn-select" id="btn-ship-orange" onclick="selecionarNave('orange')">USAR</button>
         </div>
-
         <div class="item-card" id="card-red-ship" style="display: none;">
-            <div style="display: flex; align-items: center;">
-                <div class="ship-preview" style="background: #ff0000;"></div>
-                <span>Vermelha (Dano 4)</span>
-            </div>
+            <div style="display: flex; align-items: center;"><div class="ship-preview" style="background: #ff0000;"></div><span>Vermelha (Dano 4)</span></div>
             <button style="width: auto;" class="btn-select" id="btn-ship-red" onclick="selecionarNave('red')">USAR</button>
         </div>
-
         <button onclick="fecharHangar()">VOLTAR</button>
     </div>
 
     <div id="shop" class="overlay">
         <h1 style="color: #ffd700; margin-top:0;">LOJA</h1>
         <p>Saldo: <span class="coin-icon" id="shopCoins">0</span></p>
-        
-        <div class="item-card" id="buy-card-purple">
-            <div style="text-align: left;">
-                <h3 style="color: #a020f0; margin: 0;">Nave Roxa</h3>
-                <small>Dano 2x</small>
-            </div>
-            <button style="width: auto;" class="btn-shop" onclick="comprarNave('purple', 10000)">10.000</button>
-        </div>
-
-        <div class="item-card" id="buy-card-orange">
-            <div style="text-align: left;">
-                <h3 style="color: #ff8c00; margin: 0;">Nave Laranja</h3>
-                <small>Dano 3x</small>
-            </div>
-            <button style="width: auto;" class="btn-shop" onclick="comprarNave('orange', 20000)">20.000</button>
-        </div>
-
-        <div class="item-card" id="buy-card-red">
-            <div style="text-align: left;">
-                <h3 style="color: #ff0000; margin: 0;">Nave Vermelha</h3>
-                <small>Dano 4x</small>
-            </div>
-            <button style="width: auto;" class="btn-shop" onclick="comprarNave('red', 30000)">30.000</button>
-        </div>
-
+        <div class="item-card" id="buy-card-purple"><div><h3 style="color: #a020f0; margin: 0;">Nave Roxa</h3><small>Dano 2x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('purple', 10000)">10.000</button></div>
+        <div class="item-card" id="buy-card-orange"><div><h3 style="color: #ff8c00; margin: 0;">Nave Laranja</h3><small>Dano 3x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('orange', 20000)">20.000</button></div>
+        <div class="item-card" id="buy-card-red"><div><h3 style="color: #ff0000; margin: 0;">Nave Vermelha</h3><small>Dano 4x</small></div><button style="width: auto;" class="btn-shop" onclick="comprarNave('red', 30000)">30.000</button></div>
         <p id="allBoughtMsg" style="display:none;">Você já possui todas as naves!</p>
         <button onclick="fecharLoja()">VOLTAR</button>
     </div>
@@ -128,165 +91,151 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- Persistência e Dados ---
         let totalCoins = parseInt(localStorage.getItem('fireHeroCoins')) || 0;
         let ownsPurpleShip = localStorage.getItem('ownsPurpleShip') === 'true';
-        let ownsOrangeShip = localStorage.getItem('ownsOrangeShip') === 'true'; // NOVO
-        let ownsRedShip = localStorage.getItem('ownsRedShip') === 'true';       // NOVO
+        let ownsOrangeShip = localStorage.getItem('ownsOrangeShip') === 'true';
+        let ownsRedShip = localStorage.getItem('ownsRedShip') === 'true';
         let currentShip = localStorage.getItem('equippedShip') || 'default';
 
         function updateUI() {
             document.getElementById('totalCoinsUI').innerText = totalCoins;
             document.getElementById('lobbyCoins').innerText = totalCoins;
             document.getElementById('shopCoins').innerText = totalCoins;
-            
-            // Controle de visibilidade na Loja e Hangar
-            if (ownsPurpleShip) {
-                document.getElementById('buy-card-purple').style.display = 'none';
-                document.getElementById('card-purple-ship').style.display = 'flex';
-            }
-            if (ownsOrangeShip) {
-                document.getElementById('buy-card-orange').style.display = 'none';
-                document.getElementById('card-orange-ship').style.display = 'flex';
-            }
-            if (ownsRedShip) {
-                document.getElementById('buy-card-red').style.display = 'none';
-                document.getElementById('card-red-ship').style.display = 'flex';
-            }
-
-            if (ownsPurpleShip && ownsOrangeShip && ownsRedShip) {
-                document.getElementById('allBoughtMsg').style.display = 'block';
-            }
-
-            // Atualizar botões de seleção
+            if (ownsPurpleShip) { document.getElementById('buy-card-purple').style.display = 'none'; document.getElementById('card-purple-ship').style.display = 'flex'; }
+            if (ownsOrangeShip) { document.getElementById('buy-card-orange').style.display = 'none'; document.getElementById('card-orange-ship').style.display = 'flex'; }
+            if (ownsRedShip) { document.getElementById('buy-card-red').style.display = 'none'; document.getElementById('card-red-ship').style.display = 'flex'; }
             const ships = ['default', 'purple', 'orange', 'red'];
             ships.forEach(s => {
                 const btn = document.getElementById(`btn-ship-${s}`);
-                if (btn) {
-                    btn.className = currentShip === s ? 'btn-select active' : 'btn-select';
-                    btn.innerText = currentShip === s ? 'EM USO' : 'USAR';
-                }
+                if (btn) { btn.className = currentShip === s ? 'btn-select active' : 'btn-select'; btn.innerText = currentShip === s ? 'EM USO' : 'USAR'; }
             });
         }
 
-        // --- Navegação ---
         function abrirLoja() { fecharTudo(); document.getElementById('shop').style.display = 'block'; updateUI(); }
         function abrirHangar() { fecharTudo(); document.getElementById('hangar').style.display = 'block'; updateUI(); }
         function fecharTudo() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
         function fecharLoja() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
         function fecharHangar() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
 
-        // Função de compra genérica
         function comprarNave(tipo, preco) {
             if (totalCoins >= preco) {
                 totalCoins -= preco;
                 if (tipo === 'purple') ownsPurpleShip = true;
                 if (tipo === 'orange') ownsOrangeShip = true;
                 if (tipo === 'red') ownsRedShip = true;
-                
                 localStorage.setItem('fireHeroCoins', totalCoins);
                 localStorage.setItem(`owns${tipo.charAt(0).toUpperCase() + tipo.slice(1)}Ship`, 'true');
                 updateUI();
-            } else { alert(`Você precisa de ${preco.toLocaleString()} moedas!`); }
+            } else { alert("Moedas insuficientes!"); }
         }
 
-        function selecionarNave(type) {
-            currentShip = type;
-            localStorage.setItem('equippedShip', type);
-            updateUI();
-        }
+        function selecionarNave(type) { currentShip = type; localStorage.setItem('equippedShip', type); updateUI(); }
 
         // --- Motor do Jogo ---
         let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
-        let balas = [], inimigos = [];
+        let balas = [], inimigos = [], powerups = [];
+        let doubleShotActive = false, powerupTimer = 0;
 
-        const shipColors = {
-            'default': '#00ccff',
-            'purple': '#a020f0',
-            'orange': '#ff8c00',
-            'red': '#ff0000'
-        };
+        const shipColors = { 'default': '#00ccff', 'purple': '#a020f0', 'orange': '#ff8c00', 'red': '#ff0000', 'powerup': '#ffff00' };
 
         const player = {
             x: canvas.width / 2, y: canvas.height - 100, radius: 15,
             draw: function() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = shipColors[currentShip];
-                ctx.fill();
-                ctx.closePath();
+                ctx.fillStyle = doubleShotActive ? shipColors['powerup'] : shipColors[currentShip];
+                ctx.fill(); ctx.closePath();
                 ctx.fillStyle = '#fff';
-                ctx.fillRect(this.x - 3, this.y - 35, 6, 25);
+                if (doubleShotActive) { // Canhão duplo visual
+                    ctx.fillRect(this.x - 12, this.y - 30, 6, 20);
+                    ctx.fillRect(this.x + 6, this.y - 30, 6, 20);
+                } else {
+                    ctx.fillRect(this.x - 3, this.y - 35, 6, 25);
+                }
             }
         };
 
         class Bala {
-            constructor() { 
-                this.x = player.x; 
-                this.y = player.y - 30; 
-                this.radius = 5; 
-                this.speed = 14; 
-                this.markedForDeletion = false; 
+            constructor(xOffset = 0) { 
+                this.x = player.x + xOffset; this.y = player.y - 30; this.radius = 5; this.speed = 14; this.markedForDeletion = false; 
             }
             update() { this.y -= this.speed; if (this.y < -10) this.markedForDeletion = true; }
             draw() {
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = shipColors[currentShip]; // Bala da cor da nave
+                ctx.fillStyle = doubleShotActive ? '#ffff00' : shipColors[currentShip];
                 ctx.fill(); ctx.closePath();
             }
         }
 
         class Inimigo {
             constructor() {
-                this.cols = 5;
-                this.size = canvas.width / this.cols;
-                this.x = Math.floor(Math.random() * this.cols) * this.size;
-                this.y = -this.size;
+                this.cols = 5; this.size = canvas.width / this.cols;
+                this.x = Math.floor(Math.random() * this.cols) * this.size; this.y = -this.size;
                 this.speed = 1.5 + (sessionCoins / 15000);
                 this.vida = Math.floor(Math.random() * 20) + 15 + Math.floor(sessionCoins / 50);
-                this.maxVida = this.vida;
-                this.markedForDeletion = false;
+                this.maxVida = this.vida; this.markedForDeletion = false;
             }
             update() {
                 this.y += this.speed;
                 if (this.y > canvas.height) this.markedForDeletion = true;
-                if (Math.hypot(player.x - (this.x + this.size/2), player.y - (this.y + this.size/2)) < this.size/1.4) {
-                    gameOver = true;
-                }
+                if (Math.hypot(player.x - (this.x + this.size/2), player.y - (this.y + this.size/2)) < this.size/1.4) gameOver = true;
             }
             draw() {
                 let hue = Math.max(0, 200 - (this.vida * 1.5));
                 ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
                 ctx.fillRect(this.x + 3, this.y + 3, this.size - 6, this.size - 6);
-                ctx.fillStyle = 'white'; 
-                ctx.font = `bold ${this.size/2.5}px Arial`;
-                ctx.textAlign = 'center'; 
-                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white'; ctx.font = `bold ${this.size/2.5}px Arial`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(this.vida, this.x + this.size/2, this.y + this.size/2);
             }
         }
 
+        class PowerUp {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 40) + 20;
+                this.y = -50; this.size = 30; this.speed = 3;
+            }
+            update() {
+                this.y += this.speed;
+                if (Math.hypot(player.x - this.x, player.y - this.y) < 30) {
+                    ativarPowerUp();
+                    return true; // marcar para deletar
+                }
+                return this.y > canvas.height;
+            }
+            draw() {
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('X2', this.x, this.y + 4);
+            }
+        }
+
+        function ativarPowerUp() {
+            doubleShotActive = true;
+            powerupTimer = 600; // 10 segundos (60fps * 10)
+            document.getElementById('powerup-timer').style.display = 'block';
+        }
+
         function começarJogo() {
             sessionCoins = 0; frame = 0; gameOver = false; jogoRodando = true;
-            balas = []; inimigos = [];
+            balas = []; inimigos = []; powerups = []; doubleShotActive = false;
             document.getElementById('ui').style.display = 'block';
-            fecharTudo();
-            animate();
+            fecharTudo(); animate();
         }
 
         function irParaLobby() {
-            fecharTudo();
-            document.getElementById('lobby').style.display = 'block';
-            document.getElementById('ui').style.display = 'none';
-            jogoRodando = false;
-            updateUI();
+            fecharTudo(); document.getElementById('lobby').style.display = 'block';
+            document.getElementById('ui').style.display = 'none'; jogoRodando = false; updateUI();
         }
 
         function animate() {
             if (!jogoRodando) return;
             if (gameOver) {
-                totalCoins += sessionCoins;
-                localStorage.setItem('fireHeroCoins', totalCoins);
+                totalCoins += sessionCoins; localStorage.setItem('fireHeroCoins', totalCoins);
                 document.getElementById('game-over').style.display = 'block';
                 document.getElementById('earnedCoins').innerText = sessionCoins;
                 return;
@@ -294,38 +243,53 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            if (frame % 10 === 0) balas.push(new Bala());
+            // Spawn de itens e inimigos
+            if (frame % 10 === 0) {
+                if (doubleShotActive) {
+                    balas.push(new Bala(-10), new Bala(10));
+                } else {
+                    balas.push(new Bala());
+                }
+            }
             if (frame % 40 === 0) inimigos.push(new Inimigo());
+            if (frame > 0 && frame % 1200 === 0) powerups.push(new PowerUp()); // Cada 20 segundos (20 * 60 = 1200 frames)
 
-            // Multiplicador de Dano
-            let dano = 1;
-            if (currentShip === 'purple') dano = 2;
-            if (currentShip === 'orange') dano = 3;
-            if (currentShip === 'red') dano = 4;
+            // Timer do PowerUp
+            if (doubleShotActive) {
+                powerupTimer--;
+                document.getElementById('timerSec').innerText = Math.ceil(powerupTimer / 60);
+                if (powerupTimer <= 0) {
+                    doubleShotActive = false;
+                    document.getElementById('powerup-timer').style.display = 'none';
+                }
+            }
 
+            // Dano
+            let danoBase = 1;
+            if (currentShip === 'purple') danoBase = 2;
+            if (currentShip === 'orange') danoBase = 3;
+            if (currentShip === 'red') danoBase = 4;
+            let danoFinal = doubleShotActive ? danoBase * 2 : danoBase;
+
+            // Updates
+            powerups = powerups.filter(p => !p.update());
             balas.forEach(b => {
                 b.update();
                 inimigos.forEach(ini => {
-                    if (!b.markedForDeletion && !ini.markedForDeletion && 
-                        b.x > ini.x && b.x < ini.x + ini.size && 
-                        b.y > ini.y && b.y < ini.y + ini.size) {
-                        
-                        ini.vida -= dano;
-                        b.markedForDeletion = true;
-                        if (ini.vida <= 0) { 
-                            sessionCoins += ini.maxVida; 
-                            ini.markedForDeletion = true; 
-                        }
+                    if (!b.markedForDeletion && !ini.markedForDeletion && b.x > ini.x && b.x < ini.x + ini.size && b.y > ini.y && b.y < ini.y + ini.size) {
+                        ini.vida -= danoFinal; b.markedForDeletion = true;
+                        if (ini.vida <= 0) { sessionCoins += ini.maxVida; ini.markedForDeletion = true; }
                     }
                 });
             });
-
             inimigos.forEach(ini => ini.update());
+            
+            // Desenho
             balas = balas.filter(b => !b.markedForDeletion);
             inimigos = inimigos.filter(i => !i.markedForDeletion);
-
             balas.forEach(b => b.draw());
             inimigos.forEach(i => i.draw());
+            powerups.forEach(p => p.draw());
             player.draw();
 
             frame++;
