@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DESTROYER SHIP</title>
+    <title>FIRE HERO - DESTROYER</title>
     <style>
         body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; user-select: none; }
         canvas { display: block; margin: 0 auto; background-color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
@@ -11,7 +11,7 @@
         #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 20px; font-weight: bold; z-index: 10; pointer-events: none; text-shadow: 2px 2px 0 #000; display: none; }
         #coin-display { color: #ffd700; margin-bottom: 5px; }
 
-        .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; z-index: 20; min-width: 300px; display: none; border: 2px solid #444; }
+        .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; z-index: 20; min-width: 320px; display: none; border: 2px solid #444; max-height: 80vh; overflow-y: auto; }
         #lobby { display: block; border-color: #00ccff; }
         #game-over { border-color: #ff3333; }
         #shop, #hangar { border-color: #ffd700; }
@@ -44,6 +44,7 @@
 
     <div id="hangar" class="overlay">
         <h1 style="color: #a020f0; margin-top:0;">HANGAR</h1>
+        
         <div class="item-card">
             <div style="display: flex; align-items: center;">
                 <div class="ship-preview" style="background: #00ccff;"></div>
@@ -51,6 +52,7 @@
             </div>
             <button style="width: auto;" class="btn-select" id="btn-ship-default" onclick="selecionarNave('default')">USAR</button>
         </div>
+
         <div class="item-card" id="card-purple-ship" style="display: none;">
             <div style="display: flex; align-items: center;">
                 <div class="ship-preview" style="background: #a020f0;"></div>
@@ -58,20 +60,55 @@
             </div>
             <button style="width: auto;" class="btn-select" id="btn-ship-purple" onclick="selecionarNave('purple')">USAR</button>
         </div>
+
+        <div class="item-card" id="card-orange-ship" style="display: none;">
+            <div style="display: flex; align-items: center;">
+                <div class="ship-preview" style="background: #ff8c00;"></div>
+                <span>Laranja (Dano 3)</span>
+            </div>
+            <button style="width: auto;" class="btn-select" id="btn-ship-orange" onclick="selecionarNave('orange')">USAR</button>
+        </div>
+
+        <div class="item-card" id="card-red-ship" style="display: none;">
+            <div style="display: flex; align-items: center;">
+                <div class="ship-preview" style="background: #ff0000;"></div>
+                <span>Vermelha (Dano 4)</span>
+            </div>
+            <button style="width: auto;" class="btn-select" id="btn-ship-red" onclick="selecionarNave('red')">USAR</button>
+        </div>
+
         <button onclick="fecharHangar()">VOLTAR</button>
     </div>
 
     <div id="shop" class="overlay">
         <h1 style="color: #ffd700; margin-top:0;">LOJA</h1>
         <p>Saldo: <span class="coin-icon" id="shopCoins">0</span></p>
+        
         <div class="item-card" id="buy-card-purple">
             <div style="text-align: left;">
                 <h3 style="color: #a020f0; margin: 0;">Nave Roxa</h3>
-                <small>Dano 2x permanente</small>
+                <small>Dano 2x</small>
             </div>
-            <button style="width: auto;" class="btn-shop" onclick="comprarNave()">10.000</button>
+            <button style="width: auto;" class="btn-shop" onclick="comprarNave('purple', 10000)">10.000</button>
         </div>
-        <p id="allBoughtMsg" style="display:none;">Você já possui todos os itens!</p>
+
+        <div class="item-card" id="buy-card-orange">
+            <div style="text-align: left;">
+                <h3 style="color: #ff8c00; margin: 0;">Nave Laranja</h3>
+                <small>Dano 3x</small>
+            </div>
+            <button style="width: auto;" class="btn-shop" onclick="comprarNave('orange', 20000)">20.000</button>
+        </div>
+
+        <div class="item-card" id="buy-card-red">
+            <div style="text-align: left;">
+                <h3 style="color: #ff0000; margin: 0;">Nave Vermelha</h3>
+                <small>Dano 4x</small>
+            </div>
+            <button style="width: auto;" class="btn-shop" onclick="comprarNave('red', 30000)">30.000</button>
+        </div>
+
+        <p id="allBoughtMsg" style="display:none;">Você já possui todas as naves!</p>
         <button onclick="fecharLoja()">VOLTAR</button>
     </div>
 
@@ -94,6 +131,8 @@
         // --- Persistência e Dados ---
         let totalCoins = parseInt(localStorage.getItem('fireHeroCoins')) || 0;
         let ownsPurpleShip = localStorage.getItem('ownsPurpleShip') === 'true';
+        let ownsOrangeShip = localStorage.getItem('ownsOrangeShip') === 'true'; // NOVO
+        let ownsRedShip = localStorage.getItem('ownsRedShip') === 'true';       // NOVO
         let currentShip = localStorage.getItem('equippedShip') || 'default';
 
         function updateUI() {
@@ -101,19 +140,33 @@
             document.getElementById('lobbyCoins').innerText = totalCoins;
             document.getElementById('shopCoins').innerText = totalCoins;
             
+            // Controle de visibilidade na Loja e Hangar
             if (ownsPurpleShip) {
                 document.getElementById('buy-card-purple').style.display = 'none';
-                document.getElementById('allBoughtMsg').style.display = 'block';
                 document.getElementById('card-purple-ship').style.display = 'flex';
             }
-
-            document.getElementById('btn-ship-default').className = currentShip === 'default' ? 'btn-select active' : 'btn-select';
-            document.getElementById('btn-ship-default').innerText = currentShip === 'default' ? 'EM USO' : 'USAR';
-            
-            if (ownsPurpleShip) {
-                document.getElementById('btn-ship-purple').className = currentShip === 'purple' ? 'btn-select active' : 'btn-select';
-                document.getElementById('btn-ship-purple').innerText = currentShip === 'purple' ? 'EM USO' : 'USAR';
+            if (ownsOrangeShip) {
+                document.getElementById('buy-card-orange').style.display = 'none';
+                document.getElementById('card-orange-ship').style.display = 'flex';
             }
+            if (ownsRedShip) {
+                document.getElementById('buy-card-red').style.display = 'none';
+                document.getElementById('card-red-ship').style.display = 'flex';
+            }
+
+            if (ownsPurpleShip && ownsOrangeShip && ownsRedShip) {
+                document.getElementById('allBoughtMsg').style.display = 'block';
+            }
+
+            // Atualizar botões de seleção
+            const ships = ['default', 'purple', 'orange', 'red'];
+            ships.forEach(s => {
+                const btn = document.getElementById(`btn-ship-${s}`);
+                if (btn) {
+                    btn.className = currentShip === s ? 'btn-select active' : 'btn-select';
+                    btn.innerText = currentShip === s ? 'EM USO' : 'USAR';
+                }
+            });
         }
 
         // --- Navegação ---
@@ -123,14 +176,18 @@
         function fecharLoja() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
         function fecharHangar() { fecharTudo(); document.getElementById('lobby').style.display = 'block'; }
 
-        function comprarNave() {
-            if (totalCoins >= 10000) {
-                totalCoins -= 10000;
-                ownsPurpleShip = true;
+        // Função de compra genérica
+        function comprarNave(tipo, preco) {
+            if (totalCoins >= preco) {
+                totalCoins -= preco;
+                if (tipo === 'purple') ownsPurpleShip = true;
+                if (tipo === 'orange') ownsOrangeShip = true;
+                if (tipo === 'red') ownsRedShip = true;
+                
                 localStorage.setItem('fireHeroCoins', totalCoins);
-                localStorage.setItem('ownsPurpleShip', 'true');
+                localStorage.setItem(`owns${tipo.charAt(0).toUpperCase() + tipo.slice(1)}Ship`, 'true');
                 updateUI();
-            } else { alert("Você precisa de 10.000 moedas!"); }
+            } else { alert(`Você precisa de ${preco.toLocaleString()} moedas!`); }
         }
 
         function selecionarNave(type) {
@@ -143,12 +200,19 @@
         let frame = 0, sessionCoins = 0, gameOver = false, jogoRodando = false;
         let balas = [], inimigos = [];
 
+        const shipColors = {
+            'default': '#00ccff',
+            'purple': '#a020f0',
+            'orange': '#ff8c00',
+            'red': '#ff0000'
+        };
+
         const player = {
             x: canvas.width / 2, y: canvas.height - 100, radius: 15,
             draw: function() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = currentShip === 'purple' ? '#a020f0' : '#00ccff';
+                ctx.fillStyle = shipColors[currentShip];
                 ctx.fill();
                 ctx.closePath();
                 ctx.fillStyle = '#fff';
@@ -167,7 +231,7 @@
             update() { this.y -= this.speed; if (this.y < -10) this.markedForDeletion = true; }
             draw() {
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = currentShip === 'purple' ? '#d8b4fe' : '#00f2ff';
+                ctx.fillStyle = shipColors[currentShip]; // Bala da cor da nave
                 ctx.fill(); ctx.closePath();
             }
         }
@@ -178,7 +242,7 @@
                 this.size = canvas.width / this.cols;
                 this.x = Math.floor(Math.random() * this.cols) * this.size;
                 this.y = -this.size;
-                this.speed = 1.5 + (sessionCoins / 10000);
+                this.speed = 1.5 + (sessionCoins / 15000);
                 this.vida = Math.floor(Math.random() * 20) + 15 + Math.floor(sessionCoins / 50);
                 this.maxVida = this.vida;
                 this.markedForDeletion = false;
@@ -186,7 +250,6 @@
             update() {
                 this.y += this.speed;
                 if (this.y > canvas.height) this.markedForDeletion = true;
-                // Colisão com jogador
                 if (Math.hypot(player.x - (this.x + this.size/2), player.y - (this.y + this.size/2)) < this.size/1.4) {
                     gameOver = true;
                 }
@@ -234,7 +297,12 @@
             if (frame % 10 === 0) balas.push(new Bala());
             if (frame % 40 === 0) inimigos.push(new Inimigo());
 
-            // Update e Colisão
+            // Multiplicador de Dano
+            let dano = 1;
+            if (currentShip === 'purple') dano = 2;
+            if (currentShip === 'orange') dano = 3;
+            if (currentShip === 'red') dano = 4;
+
             balas.forEach(b => {
                 b.update();
                 inimigos.forEach(ini => {
@@ -242,7 +310,7 @@
                         b.x > ini.x && b.x < ini.x + ini.size && 
                         b.y > ini.y && b.y < ini.y + ini.size) {
                         
-                        ini.vida -= (currentShip === 'purple' ? 2 : 1);
+                        ini.vida -= dano;
                         b.markedForDeletion = true;
                         if (ini.vida <= 0) { 
                             sessionCoins += ini.maxVida; 
@@ -253,8 +321,6 @@
             });
 
             inimigos.forEach(ini => ini.update());
-
-            // Filtro e Desenho
             balas = balas.filter(b => !b.markedForDeletion);
             inimigos = inimigos.filter(i => !i.markedForDeletion);
 
@@ -266,7 +332,6 @@
             requestAnimationFrame(animate);
         }
 
-        // --- Controles ---
         function handleMove(e) {
             if (!jogoRodando) return;
             const rect = canvas.getBoundingClientRect();
